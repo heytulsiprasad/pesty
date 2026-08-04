@@ -53,7 +53,15 @@ enum PasteService {
         #else
         // Direct-download build: optionally paste straight into the active app by
         // synthesizing ⌘V. This requires the user's Accessibility grant.
-        guard Settings.shared.pasteDirectly && AXIsProcessTrusted() else { return }
+        guard Settings.shared.pasteDirectly else { return }
+        guard AXIsProcessTrusted() else {
+            // Returning quietly here makes Return look broken: the clip lands on the
+            // pasteboard but nothing is typed, with nothing on screen to explain it.
+            // Ad-hoc signed builds lose this grant on every rebuild, so ask again.
+            ensureAccessibility(prompt: true)
+            target.activate()
+            return
+        }
         target.activate()
         waitForFrontmost(target, attempts: 20)
         #endif

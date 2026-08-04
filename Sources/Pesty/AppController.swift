@@ -181,19 +181,20 @@ final class AppController: NSObject, NSApplicationDelegate {
 
     func pasteSelected() {
         guard let item = store.selectedItem else { return }
-        hideBar()
-        PasteService.paste(item, into: previousApp, monitor: monitor)
+        pasteItem(item)
     }
 
     func pasteItem(_ item: ClipItem) {
         hideBar()
         PasteService.paste(item, into: previousApp, monitor: monitor)
+        store.promote(item)
     }
 
     func copyItem(_ item: ClipItem) {
         let change = PasteService.copy(item)
         monitor.suppressUntilChangeCount = change
         hideBar()
+        store.promote(item)
     }
 
     func showSettings() {

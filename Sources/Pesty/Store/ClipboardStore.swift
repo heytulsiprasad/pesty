@@ -103,6 +103,24 @@ final class ClipboardStore {
         scheduleSave()
     }
 
+    /// Pasting a clip makes it the most recent one.
+    ///
+    /// This cannot ride on the re-capture path in addCaptured: PasteService sets
+    /// `monitor.suppressUntilChangeCount` for its own pasteboard write, so Pesty
+    /// never sees the clip come back and never promotes it.
+    ///
+    /// History only. Pinboards are hand-ordered by the user and pasting from one
+    /// should not shuffle it.
+    func promote(_ item: ClipItem) {
+        guard let idx = history.firstIndex(where: { $0.id == item.id }) else { return }
+        guard idx != 0 else { return }
+        var moved = history.remove(at: idx)
+        moved.createdAt = Date()
+        history.insert(moved, at: 0)
+        if source == .history && searchText.isEmpty { selectedID = moved.id }
+        scheduleSave()
+    }
+
     func applyHistoryLimit() { trimHistory(); scheduleSave() }
 
     private func trimHistory() {
