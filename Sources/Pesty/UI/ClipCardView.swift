@@ -39,18 +39,18 @@ struct ClipCardView: View {
             HStack(alignment: .top, spacing: 8) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(item.type.label)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(Theme.headerText)
                     Text(item.createdAt.clipRelativeLong)
-                        .font(.system(size: 11.5))
+                        .font(.system(size: 10.5))
                         .foregroundStyle(Theme.headerSubText)
                 }
                 .lineLimit(1)
                 Spacer(minLength: 4)
                 appIconTile
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
         }
         .frame(height: Theme.headerHeight)
     }
@@ -60,7 +60,7 @@ struct ClipCardView: View {
         Image(nsImage: AppIconProvider.icon(forBundleID: item.sourceBundleID))
             .resizable()
             .interpolation(.high)
-            .frame(width: 42, height: 42)
+            .frame(width: 34, height: 34)
             .shadow(color: .black.opacity(0.18), radius: 2, y: 1)
     }
 
