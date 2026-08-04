@@ -197,6 +197,14 @@ final class AppController: NSObject, NSApplicationDelegate {
         if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil }
     }
 
+    /// ⌥⌫ semantics: drop trailing whitespace, then the word before the caret.
+    static func deletingLastWord(_ s: String) -> String {
+        var t = Substring(s)
+        while let c = t.last, c.isWhitespace { t = t.dropLast() }
+        while let c = t.last, !c.isWhitespace { t = t.dropLast() }
+        return String(t)
+    }
+
     private func handleKey(_ event: NSEvent) -> NSEvent? {
         let code = Int(event.keyCode)
         let flags = event.modifierFlags
@@ -222,10 +230,21 @@ final class AppController: NSObject, NSApplicationDelegate {
         case kVK_RightArrow, kVK_DownArrow:
             store.moveSelection(by: 1); return nil
         case kVK_Delete:
-            if cmd, let sel = store.selectedItem { store.delete(sel); return nil }
+            // An active search owns the delete keys. ⌘⌫ must NOT fall through to
+            // deleting the selected clip here — pressing it to clear the field was
+            // silently destroying history instead.
             if !store.searchText.isEmpty {
-                store.searchText.removeLast(); store.selectFirst(); return nil
+                if cmd {
+                    store.searchText = ""
+                } else if opt {
+                    store.searchText = Self.deletingLastWord(store.searchText)
+                } else {
+                    store.searchText.removeLast()
+                }
+                store.selectFirst()
+                return nil
             }
+            if cmd, let sel = store.selectedItem { store.delete(sel) }
             return nil
         case kVK_ForwardDelete:
             if let sel = store.selectedItem { store.delete(sel) }
