@@ -44,7 +44,7 @@ final class BarWindowController: NSWindowController, NSWindowDelegate {
     /// used to fall through to `NSScreen.main`, which is the screen holding the *key
     /// window* — not the one the pointer is on — so the bar surfaced on the wrong
     /// display. Hit-test with `NSMouseInRect`, then fall back to the nearest screen.
-    private static func targetScreen() -> NSScreen? {
+    static func targetScreen() -> NSScreen? {
         let mouse = NSEvent.mouseLocation
         if let hit = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) {
             return hit

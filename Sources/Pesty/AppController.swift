@@ -10,6 +10,7 @@ final class AppController: NSObject, NSApplicationDelegate {
     let monitor = ClipboardMonitor()
 
     private var barController: BarWindowController?
+    private var previewController: PreviewWindowController?
     private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
     private var keyMonitor: Any?
@@ -146,8 +147,36 @@ final class AppController: NSObject, NSApplicationDelegate {
     }
 
     func hideBar() {
+        closePreview()
         stopKeyMonitor()
         barController?.hide()
+    }
+
+    /// Tab walks Clipboard → each pinboard → back to Clipboard; Shift-Tab reverses.
+    func cycleSource(by delta: Int) {
+        var sources: [BarSource] = [.history]
+        sources.append(contentsOf: store.pinboards.map { BarSource.pinboard($0.id) })
+        guard sources.count > 1 else { return }
+        let cur = sources.firstIndex(of: store.source) ?? 0
+        let n = sources.count
+        store.source = sources[((cur + delta) % n + n) % n]
+        store.selectFirst()
+    }
+
+    func togglePreview() {
+        if previewController?.isOpen == true { closePreview(); return }
+        guard let item = store.selectedItem else { return }
+        if previewController == nil { previewController = PreviewWindowController() }
+        // The preview takes key away from the strip, which would otherwise auto-hide.
+        suppressAutoHide = true
+        previewController?.show(item: item)
+    }
+
+    func closePreview() {
+        guard previewController?.isOpen == true else { return }
+        previewController?.hide()
+        suppressAutoHide = false
+        barController?.window?.makeKeyAndOrderFront(nil)
     }
 
     func pasteSelected() {
@@ -218,9 +247,25 @@ final class AppController: NSObject, NSApplicationDelegate {
             return nil
         }
 
+        // Space is Quick Look, but only when nothing is typed — otherwise a multi-word
+        // search would be impossible.
+        if code == kVK_Space, !cmd, !ctrl, !opt, store.searchText.isEmpty {
+            togglePreview()
+            return nil
+        }
+        // Any other key while the preview is open dismisses it first, so the strip
+        // never acts on a keystroke the user aimed at the preview.
+        if previewController?.isOpen == true, code != kVK_Space {
+            closePreview()
+        }
+
         switch code {
+        case kVK_Tab:
+            cycleSource(by: flags.contains(.shift) ? -1 : 1)
+            return nil
         case kVK_Escape:
-            if !store.searchText.isEmpty { store.searchText = ""; store.selectFirst() }
+            if previewController?.isOpen == true { closePreview() }
+            else if !store.searchText.isEmpty { store.searchText = ""; store.selectFirst() }
             else { hideBar() }
             return nil
         case kVK_Return, kVK_ANSI_KeypadEnter:

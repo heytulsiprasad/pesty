@@ -64,15 +64,22 @@ struct ClipCardView: View {
             .shadow(color: .black.opacity(0.18), radius: 2, y: 1)
     }
 
+    /// Images and colors run edge to edge — centering them left dead margins on
+    /// every side, which is exactly the "borders in between" the strip should not have.
+    private var isFullBleed: Bool { item.type == .image || item.type == .color }
+
     private var body_: some View {
         VStack(alignment: .leading, spacing: 0) {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .clipped()
+                .padding(.horizontal, isFullBleed ? 0 : 13)
+                .padding(.top, isFullBleed ? 0 : 11)
             footer
+                .padding(.horizontal, 13)
+                .padding(.bottom, 10)
+                .padding(.top, isFullBleed ? 6 : 0)
         }
-        .padding(.horizontal, 13)
-        .padding(.top, 11)
-        .padding(.bottom, 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.cardBody)
     }
@@ -82,13 +89,18 @@ struct ClipCardView: View {
         switch item.type {
         case .image:
             if let img = store.loadImage(for: item) {
-                Image(nsImage: img)
-                    .resizable().interpolation(.medium).scaledToFit()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // Fill and crop rather than fit — the card shows a thumbnail, and
+                // space opens the uncropped image.
+                Color.clear.overlay(
+                    Image(nsImage: img)
+                        .resizable().interpolation(.medium).scaledToFill()
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
             } else { placeholder("photo") }
         case .color:
             ZStack {
-                RoundedRectangle(cornerRadius: 8).fill(Color(hex: item.colorHex ?? "#000") ?? .black)
+                Color(hex: item.colorHex ?? "#000") ?? .black
                 Text(item.colorHex ?? "")
                     .font(.system(size: 13, weight: .bold, design: .monospaced))
                     .foregroundStyle(.white).shadow(radius: 1)
