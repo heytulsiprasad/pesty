@@ -26,6 +26,9 @@ final class BarWindowController: NSWindowController, NSWindowDelegate {
         panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         panel.isMovable = false
+        // Pin the strip to a light appearance so the material and card surfaces stay
+        // light regardless of the system theme, matching Paste's look.
+        panel.appearance = NSAppearance(named: .aqua)
         panel.contentView = NSHostingView(rootView: BarView())
         super.init(window: panel)
         panel.delegate = self

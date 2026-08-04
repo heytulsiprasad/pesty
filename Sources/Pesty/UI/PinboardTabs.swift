@@ -56,9 +56,10 @@ struct PinboardTabs: View {
                     .lineLimit(1)
             }
             .foregroundStyle(selected ? Theme.textPrimary : Theme.textSecondary)
-            .padding(.horizontal, 12)
-            .frame(height: 29)
-            .background(selected ? Theme.pillSelected : Theme.pillBG, in: Capsule())
+            .padding(.horizontal, 13)
+            .frame(height: 30)
+            .background(selected ? Theme.pillSelected : Color.clear, in: Capsule())
+            .shadow(color: .black.opacity(selected ? 0.10 : 0), radius: 3, y: 1)
         }
         .buttonStyle(.plain)
         .fixedSize()

@@ -21,8 +21,8 @@ struct ClipCardView: View {
                 .strokeBorder(selected ? Theme.selection : Theme.cardBorder,
                               lineWidth: selected ? 2.5 : 1)
         )
-        .shadow(color: .black.opacity(selected ? 0.35 : 0.18),
-                radius: selected ? 12 : 5, y: selected ? 5 : 2)
+        .shadow(color: .black.opacity(selected ? 0.22 : 0.10),
+                radius: selected ? 16 : 6, y: selected ? 7 : 2)
         .scaleEffect(hovering && !selected ? 1.015 : 1.0)
         .animation(.spring(response: 0.32, dampingFraction: 0.72), value: selected)
         .animation(.easeOut(duration: 0.14), value: hovering)
@@ -37,33 +37,31 @@ struct ClipCardView: View {
         ZStack {
             headerColor
             HStack(alignment: .top, spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text(item.type.label)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(Theme.headerText)
                     Text(item.createdAt.clipRelativeLong)
-                        .font(.system(size: 11))
+                        .font(.system(size: 11.5))
                         .foregroundStyle(Theme.headerSubText)
                 }
                 .lineLimit(1)
                 Spacer(minLength: 4)
                 appIconTile
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
         }
         .frame(height: Theme.headerHeight)
     }
 
     private var appIconTile: some View {
-        RoundedRectangle(cornerRadius: 9, style: .continuous)
-            .fill(Color.black.opacity(0.22))
-            .frame(width: 38, height: 38)
-            .overlay(
-                Image(nsImage: AppIconProvider.icon(forBundleID: item.sourceBundleID))
-                    .resizable()
-                    .frame(width: 28, height: 28)
-            )
+        // Paste shows the raw app icon large and unbacked on the colored header.
+        Image(nsImage: AppIconProvider.icon(forBundleID: item.sourceBundleID))
+            .resizable()
+            .interpolation(.high)
+            .frame(width: 42, height: 42)
+            .shadow(color: .black.opacity(0.18), radius: 2, y: 1)
     }
 
     private var body_: some View {
@@ -136,19 +134,19 @@ struct ClipCardView: View {
                     .foregroundStyle(Theme.textPrimary).lineLimit(1)
             }
             HStack(spacing: 6) {
+                Spacer(minLength: 0)
                 Text(metaLeft)
-                    .font(.system(size: 11))
+                    .font(.system(size: 11.5))
                     .foregroundStyle(Theme.textSecondary)
                     .lineLimit(1)
-                Spacer(minLength: 4)
+                Spacer(minLength: 0)
+                // Kept from upstream: the ⌘1–9 affordance. Paste has no equivalent,
+                // so it is muted rather than dropped — losing it would cost the
+                // keyboard paste shortcut.
                 if index < 9 {
-                    HStack(spacing: 3) {
-                        Image(systemName: "line.3.horizontal")
-                            .font(.system(size: 9, weight: .semibold))
-                        Text("\(index + 1)")
-                            .font(.system(size: 11, weight: .semibold))
-                    }
-                    .foregroundStyle(Theme.textTertiary)
+                    Text("\(index + 1)")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Theme.textTertiary)
                 }
             }
         }

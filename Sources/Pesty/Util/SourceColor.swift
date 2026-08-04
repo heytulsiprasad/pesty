@@ -2,19 +2,21 @@ import SwiftUI
 
 @MainActor
 enum SourceColor {
+    // High-chroma header colors. The muted originals read as washed out against the
+    // light card surface; Paste's headers are fully saturated.
     private static let palette: [Color] = [
-        Color(red: 0.85, green: 0.66, blue: 0.22),
-        Color(red: 0.34, green: 0.56, blue: 0.82),
-        Color(red: 0.72, green: 0.38, blue: 0.58),
-        Color(red: 0.27, green: 0.62, blue: 0.55),
-        Color(red: 0.80, green: 0.40, blue: 0.34),
-        Color(red: 0.45, green: 0.40, blue: 0.74),
-        Color(red: 0.49, green: 0.62, blue: 0.30),
-        Color(red: 0.84, green: 0.52, blue: 0.27),
-        Color(red: 0.30, green: 0.49, blue: 0.74),
-        Color(red: 0.62, green: 0.42, blue: 0.30),
-        Color(red: 0.74, green: 0.36, blue: 0.42),
-        Color(red: 0.40, green: 0.55, blue: 0.62)
+        Color(red: 0.18, green: 0.51, blue: 0.96),   // blue
+        Color(red: 0.90, green: 0.24, blue: 0.29),   // red
+        Color(red: 0.96, green: 0.62, blue: 0.11),   // amber
+        Color(red: 0.13, green: 0.73, blue: 0.37),   // green
+        Color(red: 0.85, green: 0.22, blue: 0.51),   // pink
+        Color(red: 0.49, green: 0.31, blue: 0.90),   // violet
+        Color(red: 0.02, green: 0.68, blue: 0.75),   // teal
+        Color(red: 0.96, green: 0.42, blue: 0.15),   // orange
+        Color(red: 0.35, green: 0.36, blue: 0.92),   // indigo
+        Color(red: 0.60, green: 0.72, blue: 0.10),   // lime
+        Color(red: 0.78, green: 0.16, blue: 0.72),   // magenta
+        Color(red: 0.10, green: 0.60, blue: 0.88)    // sky
     ]
 
     private static let key = "appColorMap"

@@ -19,29 +19,18 @@ struct BarView: View {
         .ignoresSafeArea()
     }
 
+    // Paste centers search + tabs across the strip. The overlay keeps the trailing
+    // menu pinned without it stealing width from the centered group.
     private var topBar: some View {
-        HStack(spacing: 14) {
-            syncButton
+        HStack(spacing: 12) {
             searchIndicator
             PinboardTabs()
-                .layoutPriority(1)
-            Spacer(minLength: 8)
-            moreMenu
+                .fixedSize()
         }
+        .frame(maxWidth: .infinity)
+        .overlay(alignment: .trailing) { moreMenu }
         .padding(.horizontal, 18)
         .frame(height: 56)
-    }
-
-    private var syncButton: some View {
-        Button {
-            AppController.shared.toggleICloudSync()
-        } label: {
-            Image(systemName: settings.iCloudSync ? "checkmark.icloud.fill" : "arrow.triangle.2.circlepath")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(settings.iCloudSync ? Theme.selection : Theme.textSecondary)
-        }
-        .buttonStyle(.plain)
-        .help(settings.iCloudSync ? "iCloud sync on" : "Turn on iCloud sync")
     }
 
     private var searchIndicator: some View {
@@ -71,6 +60,10 @@ struct BarView: View {
         Menu {
             Button("Settings…") { AppController.shared.showSettings() }
             Button("Clear History") { store.clearHistory() }
+            Divider()
+            Button(settings.iCloudSync ? "Turn Off iCloud Sync" : "Turn On iCloud Sync") {
+                AppController.shared.toggleICloudSync()
+            }
             Divider()
             Button("About Pesty") { AppController.shared.showAbout() }
             Button("Quit Pesty") { NSApp.terminate(nil) }
