@@ -59,7 +59,7 @@ struct PinboardTabs: View {
             .padding(.horizontal, 13)
             .frame(height: 30)
             .background(selected ? Theme.pillSelected : Color.clear, in: Capsule())
-            .shadow(color: .black.opacity(selected ? 0.10 : 0), radius: 3, y: 1)
+            .shadow(color: selected ? Theme.cardShadow : .clear, radius: 3, y: 1)
         }
         .buttonStyle(.plain)
         .fixedSize()

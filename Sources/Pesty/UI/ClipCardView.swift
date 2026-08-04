@@ -21,7 +21,7 @@ struct ClipCardView: View {
                 .strokeBorder(selected ? Theme.selection : Theme.cardBorder,
                               lineWidth: selected ? 2.5 : 1)
         )
-        .shadow(color: .black.opacity(selected ? 0.22 : 0.10),
+        .shadow(color: selected ? Theme.cardShadowSelected : Theme.cardShadow,
                 radius: selected ? 16 : 6, y: selected ? 7 : 2)
         .scaleEffect(hovering && !selected ? 1.015 : 1.0)
         .animation(.spring(response: 0.32, dampingFraction: 0.72), value: selected)

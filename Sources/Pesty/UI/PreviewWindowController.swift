@@ -24,7 +24,6 @@ final class PreviewWindowController: NSWindowController, NSWindowDelegate {
         panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         panel.isMovable = false
-        panel.appearance = NSAppearance(named: .aqua)
         super.init(window: panel)
         panel.delegate = self
     }
