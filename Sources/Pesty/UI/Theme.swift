@@ -1,7 +1,10 @@
 import SwiftUI
 
 enum Theme {
-    static let cardWidth: CGFloat = 252
+    // Card body height is barHeight (370) minus the toolbar and strip padding, so
+    // ~292pt. Width is set just above that to land slightly wider than tall, the
+    // proportion Paste uses — 252 read as portrait.
+    static let cardWidth: CGFloat = 304
     static let cardSpacing: CGFloat = 14
     static let cornerRadius: CGFloat = 18
     static let cardCorner: CGFloat = 14
