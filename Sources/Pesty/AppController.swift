@@ -3,7 +3,7 @@ import SwiftUI
 import Carbon.HIToolbox
 
 @MainActor
-final class AppController: NSObject, NSApplicationDelegate {
+final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     static let shared = AppController()
 
     let store = ClipboardStore.shared
@@ -12,6 +12,7 @@ final class AppController: NSObject, NSApplicationDelegate {
     private var barController: BarWindowController?
     private var previewController: PreviewWindowController?
     private var statusItem: NSStatusItem?
+    private var openItem: NSMenuItem?
     private var settingsWindow: NSWindow?
     private var keyMonitor: Any?
 
@@ -65,13 +66,10 @@ final class AppController: NSObject, NSApplicationDelegate {
 
     private func setupStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        if let button = item.button {
-            button.image = NSImage(systemSymbolName: "doc.on.clipboard", accessibilityDescription: "Pesty")
-            button.image?.isTemplate = true
-        }
         let menu = NSMenu()
-        menu.addItem(withTitle: "Open Pesty   \(Settings.shared.hotkeyDisplay)",
-                     action: #selector(menuOpen), keyEquivalent: "").target = self
+        let open = menu.addItem(withTitle: "", action: #selector(menuOpen), keyEquivalent: "")
+        open.target = self
+        openItem = open
         menu.addItem(.separator())
         menu.addItem(withTitle: "Settings…", action: #selector(menuSettings), keyEquivalent: ",").target = self
         menu.addItem(withTitle: "Clear History", action: #selector(menuClear), keyEquivalent: "").target = self
@@ -79,9 +77,33 @@ final class AppController: NSObject, NSApplicationDelegate {
         let about = menu.addItem(withTitle: "About Pesty", action: #selector(menuAbout), keyEquivalent: "")
         about.target = self
         menu.addItem(withTitle: "Quit Pesty", action: #selector(menuQuit), keyEquivalent: "q").target = self
+        menu.delegate = self
         item.menu = menu
         statusItem = item
+
+        HotKeyCenter.shared.onRegistrationChange = { [weak self] _ in self?.refreshStatusItem() }
+        refreshStatusItem()
     }
+
+    /// The status item advertises the shortcut, so it cannot be filled in once and
+    /// left alone: the user can rebind it, and macOS can refuse to register it. A
+    /// refused shortcut is otherwise invisible — the icon sits there looking healthy
+    /// while nothing responds — so the icon carries the warning too.
+    private func refreshStatusItem() {
+        let live = HotKeyCenter.shared.isRegistered
+        let shortcut = Settings.shared.hotkeyDisplay
+        openItem?.title = live
+            ? "Open Pesty   \(shortcut)"
+            : "Open Pesty   —   \(shortcut) did not register"
+        if let button = statusItem?.button {
+            button.image = NSImage(
+                systemSymbolName: live ? "doc.on.clipboard" : "exclamationmark.triangle",
+                accessibilityDescription: live ? "Pesty" : "Pesty — shortcut unavailable")
+            button.image?.isTemplate = true
+        }
+    }
+
+    func menuNeedsUpdate(_ menu: NSMenu) { refreshStatusItem() }
 
     @objc private func menuOpen() { showBar() }
     @objc private func menuSettings() { showSettings() }

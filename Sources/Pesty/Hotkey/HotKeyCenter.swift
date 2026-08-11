@@ -7,6 +7,28 @@ final class HotKeyCenter {
 
     var onTrigger: (() -> Void)?
 
+    /// Fired whenever registration starts or stops succeeding, so the UI can say so.
+    var onRegistrationChange: ((Bool) -> Void)?
+
+    /// Whether `RegisterEventHotKey` accepted the shortcut.
+    ///
+    /// A refusal has no runtime symptom on its own: the hotkey never fires while the
+    /// menu bar icon sits there looking healthy, which reads as a dead app. Anything
+    /// that advertises the shortcut needs to be able to check this.
+    ///
+    /// What this does NOT catch is a shortcut another *app* already claims. Measured
+    /// on macOS 26.2: two processes registering the identical combination both get
+    /// noErr and both get a live ref back. `eventHotKeyExistsErr` only appears for a
+    /// duplicate within one process, which `reload()` rules out by unregistering
+    /// first. So do not phrase a failure here as "another app owns it" — Carbon
+    /// gives us no way to know that.
+    private(set) var isRegistered = false {
+        didSet {
+            guard isRegistered != oldValue else { return }
+            onRegistrationChange?(isRegistered)
+        }
+    }
+
     private var hotKeyRef: EventHotKeyRef?
     private var handlerRef: EventHandlerRef?
     private let signature: OSType = 0x50535459
@@ -28,15 +50,18 @@ final class HotKeyCenter {
         }, 1, &spec, nil, &handlerRef)
     }
 
-    func reload() {
+    @discardableResult
+    func reload() -> Bool {
         unregister()
         let keyCode = UInt32(Settings.shared.hotkeyKeyCode)
         let modifiers = UInt32(Settings.shared.hotkeyModifiers)
-        guard keyCode != 0 else { return }
+        guard keyCode != 0 else { isRegistered = false; return false }
         let id = EventHotKeyID(signature: signature, id: 1)
         var ref: EventHotKeyRef?
         let status = RegisterEventHotKey(keyCode, modifiers, id, GetApplicationEventTarget(), 0, &ref)
         if status == noErr { hotKeyRef = ref }
+        isRegistered = status == noErr
+        return isRegistered
     }
 
     private func unregister() {

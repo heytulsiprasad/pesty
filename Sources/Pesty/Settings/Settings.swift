@@ -32,14 +32,13 @@ final class Settings {
         }
     }
 
-    var hotkeyKeyCode: Int {
-        didSet { guard isLoaded else { return }
-            d.set(hotkeyKeyCode, forKey: Keys.hotkeyKeyCode); HotKeyCenter.shared.reload() }
+    /// Set through `setHotkey(keyCode:modifiers:)`, never one at a time — see there.
+    private(set) var hotkeyKeyCode: Int {
+        didSet { guard isLoaded else { return }; d.set(hotkeyKeyCode, forKey: Keys.hotkeyKeyCode) }
     }
 
-    var hotkeyModifiers: Int {
-        didSet { guard isLoaded else { return }
-            d.set(hotkeyModifiers, forKey: Keys.hotkeyModifiers); HotKeyCenter.shared.reload() }
+    private(set) var hotkeyModifiers: Int {
+        didSet { guard isLoaded else { return }; d.set(hotkeyModifiers, forKey: Keys.hotkeyModifiers) }
     }
 
     var launchAtLogin: Bool {
@@ -100,6 +99,22 @@ final class Settings {
         onboarded = d.bool(forKey: Keys.onboarded)
         iCloudSync = d.bool(forKey: Keys.iCloudSync)
         isLoaded = true
+    }
+
+    /// Writes both halves of the shortcut, then re-registers once.
+    ///
+    /// Assigning the two properties separately used to reload the hotkey twice, and
+    /// the first pass registered a combination the user never asked for — the new key
+    /// code paired with the old modifiers. That intermediate shortcut is live long
+    /// enough to fire, and it can lose the race for a combination another app owns.
+    ///
+    /// Returns whether the new shortcut registered; the caller decides what to do
+    /// when it did not.
+    @discardableResult
+    func setHotkey(keyCode: Int, modifiers: Int) -> Bool {
+        hotkeyKeyCode = keyCode
+        hotkeyModifiers = modifiers
+        return HotKeyCenter.shared.reload()
     }
 
     var hotkeyDisplay: String {

@@ -15,17 +15,27 @@ struct SettingsView: View {
 
 private struct GeneralSettings: View {
     @Bindable private var settings = Settings.shared
+    @State private var hotkeyRegistered = HotKeyCenter.shared.isRegistered
+
+    private let poll = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
     #if !MAS
     @State private var accessibilityGranted = AXIsProcessTrusted()
     @State private var requestedGrant = false
-
-    private let poll = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     #endif
 
     var body: some View {
         Form {
             Section("Activation") {
                 LabeledContent("Show Pesty") { HotkeyRecorderView() }
+                if !hotkeyRegistered {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text("macOS did not register \(settings.hotkeyDisplay), so the shortcut does nothing. Record a different one above.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
                 Stepper(value: $settings.historyLimit, in: 50...5000, step: 50) {
                     LabeledContent("History limit", value: "\(settings.historyLimit) items")
                 }
@@ -95,13 +105,24 @@ private struct GeneralSettings: View {
             }
         }
         .formStyle(.grouped)
-        #if !MAS
-        .onAppear { accessibilityGranted = AXIsProcessTrusted() }
+        .onAppear {
+            hotkeyRegistered = HotKeyCenter.shared.isRegistered
+            #if !MAS
+            accessibilityGranted = AXIsProcessTrusted()
+            #endif
+        }
         .onReceive(poll) { _ in
+            // Both of these can change behind the app's back — another app can take
+            // the shortcut, and the grant lives in System Settings — so poll rather
+            // than trust a snapshot taken when the window opened.
+            if HotKeyCenter.shared.isRegistered != hotkeyRegistered {
+                hotkeyRegistered = HotKeyCenter.shared.isRegistered
+            }
+            #if !MAS
             let now = AXIsProcessTrusted()
             if now != accessibilityGranted { accessibilityGranted = now }
+            #endif
         }
-        #endif
     }
 
     #if !MAS
