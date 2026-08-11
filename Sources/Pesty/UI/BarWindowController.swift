@@ -15,7 +15,7 @@ final class BarWindowController: NSWindowController, NSWindowDelegate {
     init() {
         let panel = BarPanel(
             contentRect: NSRect(x: 0, y: 0, width: 800, height: 360),
-            styleMask: [.borderless],
+            styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false)
         panel.isFloatingPanel = true
@@ -77,7 +77,12 @@ final class BarWindowController: NSWindowController, NSWindowDelegate {
         content.autoresizingMask = []
         content.frame = NSRect(x: 0, y: -height, width: onScreen.width, height: height)
 
-        NSApp.activate(ignoringOtherApps: true)
+        // A .nonactivatingPanel takes key focus without fronting the app. Asking for
+        // activation instead is what killed the strip over another app's full-screen
+        // space: macOS will not front an accessory app that owns no window in that
+        // space, so it denied the request and the panel never took key. Staying
+        // inactive also leaves `previousApp` frontmost, so the paste-back in
+        // PasteService lands without waiting out a focus round-trip.
         panel.makeKeyAndOrderFront(nil)
 
         NSAnimationContext.runAnimationGroup({ ctx in
