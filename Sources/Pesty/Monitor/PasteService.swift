@@ -4,6 +4,11 @@ import Carbon.HIToolbox
 @MainActor
 enum PasteService {
 
+    #if !MAS
+    /// Whether this launch has already put the Accessibility modal on screen.
+    private static var didAskForAccessibility = false
+    #endif
+
     @discardableResult
     static func copy(_ item: ClipItem, to pasteboard: NSPasteboard = .general) -> Int {
         if item.type == .image {
@@ -57,8 +62,15 @@ enum PasteService {
         guard AXIsProcessTrusted() else {
             // Returning quietly here makes Return look broken: the clip lands on the
             // pasteboard but nothing is typed, with nothing on screen to explain it.
-            // Ad-hoc signed builds lose this grant on every rebuild, so ask again.
-            ensureAccessibility(prompt: true)
+            //
+            // But asking on every paste is worse. AXIsProcessTrustedWithOptions puts
+            // up a system modal, so a missing grant turned every single paste into a
+            // dialog. Ask once per launch, then fall back to copy-and-focus quietly;
+            // Settings keeps a button for granting it deliberately.
+            if !didAskForAccessibility {
+                didAskForAccessibility = true
+                ensureAccessibility(prompt: true)
+            }
             target.activate()
             return
         }
