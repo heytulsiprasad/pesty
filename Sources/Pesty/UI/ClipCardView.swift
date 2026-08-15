@@ -181,10 +181,25 @@ struct ClipCardView: View {
         }
     }
 
+    /// Paste-as and copy-as differ only in what they do with the converted clip.
+    @ViewBuilder
+    private func formatMenu(_ title: String,
+                            _ action: @escaping (ClipItem) -> Void) -> some View {
+        Menu(title) {
+            ForEach(ClipFormat.allCases, id: \.self) { format in
+                Button(format.label) { action(ClipFormat.convert(item, to: format)) }
+            }
+        }
+    }
+
     @ViewBuilder
     private var menu: some View {
         Button("Paste") { AppController.shared.pasteItem(item) }
         Button("Copy") { AppController.shared.copyItem(item) }
+        if ClipFormat.canConvert(item) {
+            formatMenu("Paste as") { AppController.shared.pasteItem($0) }
+            formatMenu("Copy as") { AppController.shared.copyItem($0) }
+        }
         Divider()
         if !store.pinboards.isEmpty {
             Menu("Save to Pinboard") {

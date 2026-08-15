@@ -5,6 +5,10 @@ struct ClipItem: Identifiable, Codable, Equatable {
     var type: ClipType
     var text: String?
     var rtfData: Data?
+    /// `public.html` as captured. Web apps keep their real structure here —
+    /// lists, code blocks, tables — while their RTF flattens it. Optional, so
+    /// stores written before this field decode unchanged.
+    var htmlData: Data?
     var imageFileName: String?
     var imageHash: String?
     var fileURLs: [String]
@@ -20,6 +24,7 @@ struct ClipItem: Identifiable, Codable, Equatable {
          type: ClipType,
          text: String? = nil,
          rtfData: Data? = nil,
+         htmlData: Data? = nil,
          imageFileName: String? = nil,
          imageHash: String? = nil,
          fileURLs: [String] = [],
@@ -32,6 +37,7 @@ struct ClipItem: Identifiable, Codable, Equatable {
         self.type = type
         self.text = text
         self.rtfData = rtfData
+        self.htmlData = htmlData
         self.imageFileName = imageFileName
         self.imageHash = imageHash
         self.fileURLs = fileURLs

@@ -77,17 +77,18 @@ final class ClipboardMonitor {
         }
 
         let rtf = pasteboard.data(forType: .rtf)
+        let html = capturedHTML()
         if let string = pasteboard.string(forType: .string), !string.isEmpty {
             let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
             let type: ClipType
-            if rtf != nil {
+            if rtf != nil || html != nil {
                 type = .richText
             } else if isLink(trimmed) {
                 type = .link
             } else {
                 type = .text
             }
-            var item = ClipItem(type: type, text: string, rtfData: rtf)
+            var item = ClipItem(type: type, text: string, rtfData: rtf, htmlData: html)
             decorate(&item)
             return item
         }
@@ -99,6 +100,19 @@ final class ClipboardMonitor {
         }
 
         return nil
+    }
+
+    /// The whole history is one JSON file, and Data lands in it base64-encoded.
+    /// A heavy page would therefore inflate every save, not just its own entry.
+    ///
+    /// ponytail: fixed cap, and conversion falls back to RTF above it. Make it a
+    /// setting only if real clips start losing structure at this size.
+    private static let maxHTMLBytes = 512 * 1024
+
+    private func capturedHTML() -> Data? {
+        guard let data = pasteboard.data(forType: .html),
+              data.count <= Self.maxHTMLBytes else { return nil }
+        return data
     }
 
     private func hasColorType(_ types: [NSPasteboard.PasteboardType]) -> Bool {
