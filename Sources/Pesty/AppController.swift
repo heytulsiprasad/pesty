@@ -21,6 +21,24 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     var suppressAutoHide = false
 
+    /// Two login items — the SMAppService one and a hand-added one pointing at a
+    /// second copy of the bundle — launched two Pestys at login. Both registered
+    /// the hotkey, so one press showed two strips and the next hid one. The newest
+    /// process wins: it asks older copies to quit, and an older copy that finds a
+    /// newer one already running quits itself. `restart()` relies on this — the
+    /// relaunched copy takes over from the one that spawned it.
+    ///
+    /// ponytail: pid order stands in for launch order. It only misorders across a
+    /// pid wrap, which needs two launches racing at that exact moment.
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        guard let bundleID = Bundle.main.bundleIdentifier else { return }
+        let me = ProcessInfo.processInfo.processIdentifier
+        let others = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+            .filter { $0.processIdentifier != me }
+        if others.contains(where: { $0.processIdentifier > me }) { exit(0) }
+        others.forEach { $0.terminate() }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
 
@@ -157,8 +175,6 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if front?.bundleIdentifier != Bundle.main.bundleIdentifier {
             previousApp = front
         }
-        store.searchText = ""
-        store.source = .history
         store.selectFirst()
 
         if barController == nil {
@@ -168,9 +184,14 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         startKeyMonitor()
     }
 
+    /// The search and tab reset on the way down, not in showBar: the strip animates
+    /// every reorder, and resetting on the way up made the cards visibly reshuffle
+    /// as the bar rose.
     func hideBar() {
         closePreview()
         stopKeyMonitor()
+        store.searchText = ""
+        store.source = .history
         barController?.hide()
     }
 
@@ -212,10 +233,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         store.promote(item)
     }
 
+    /// Copy keeps the strip open, unlike paste: the point of the slide-to-front is
+    /// that the user watches the card become the newest clip.
     func copyItem(_ item: ClipItem) {
         let change = PasteService.copy(item)
         monitor.suppressUntilChangeCount = change
-        hideBar()
         store.promote(item)
     }
 
@@ -280,6 +302,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // never acts on a keystroke the user aimed at the preview.
         if previewController?.isOpen == true, code != kVK_Space {
             closePreview()
+        }
+
+        if cmd, !ctrl, !opt, code == kVK_ANSI_C {
+            if let item = store.selectedItem { copyItem(item) }
+            return nil
         }
 
         switch code {

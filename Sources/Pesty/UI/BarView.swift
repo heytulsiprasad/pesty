@@ -79,15 +79,25 @@ struct BarView: View {
         .fixedSize()
     }
 
+    /// One curve for everything that moves cards: promotion to the front, capture,
+    /// deletion, search filtering, and the scroll that follows the selected card.
+    private static let slide = Animation.spring(response: 0.45, dampingFraction: 0.85)
+
     private var strip: some View {
-        ScrollViewReader { proxy in
+        let items = store.visibleItems
+        // Keyed on identity order, not count, so a promoted card slides to the front
+        // instead of snapping — a reorder leaves the count unchanged.
+        let order = items.map(\.id)
+        return ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: Theme.cardSpacing) {
-                    ForEach(Array(store.visibleItems.enumerated()), id: \.element.id) { index, item in
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                         ClipCardView(item: item,
                                      index: index,
                                      selected: item.id == store.selectedID)
                             .id(item.id)
+                            // The selected card travels over its neighbours, not under.
+                            .zIndex(item.id == store.selectedID ? 1 : 0)
                             .transition(.asymmetric(
                                 insertion: .scale(scale: 0.92).combined(with: .opacity),
                                 removal: .opacity))
@@ -96,7 +106,7 @@ struct BarView: View {
                 .padding(.horizontal, 18)
                 .padding(.top, 4)
                 .padding(.bottom, 18)
-                .animation(.spring(response: 0.34, dampingFraction: 0.8), value: store.visibleItems.count)
+                .animation(Self.slide, value: order)
             }
             .onChange(of: store.selectedID) { _, id in
                 guard let id else { return }
@@ -104,7 +114,13 @@ struct BarView: View {
                     proxy.scrollTo(id, anchor: .center)
                 }
             }
-            .overlay { if store.visibleItems.isEmpty { emptyState } }
+            // A promoted card keeps its id, so the selection does not change and the
+            // scroll above never fires; follow it to the front here.
+            .onChange(of: order) { _, _ in
+                guard let id = store.selectedID else { return }
+                withAnimation(Self.slide) { proxy.scrollTo(id, anchor: .center) }
+            }
+            .overlay { if items.isEmpty { emptyState } }
         }
         .frame(maxHeight: .infinity)
     }
