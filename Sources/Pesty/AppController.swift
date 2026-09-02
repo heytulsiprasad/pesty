@@ -292,6 +292,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func handleKey(_ event: NSEvent) -> NSEvent? {
+        // Pesty's own text fields (Edit Title…, Save to New Pinboard…) run modally
+        // with this monitor still installed. What is typed there, and ⌘C, is theirs.
+        if event.window?.firstResponder is NSTextView { return event }
         let code = Int(event.keyCode)
         let flags = event.modifierFlags
         let cmd = flags.contains(.command)
