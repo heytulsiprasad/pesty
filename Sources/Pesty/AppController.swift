@@ -28,15 +28,27 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// newer one already running quits itself. `restart()` relies on this — the
     /// relaunched copy takes over from the one that spawned it.
     ///
+    /// Runs from main() before `shared` exists, so a losing copy never loads the
+    /// store and the winner loads it only after the copy it replaces has flushed
+    /// its last save and gone. Nobody terminates anybody — the App Sandbox build
+    /// could not, `terminate()` is refused there — each copy decides for itself:
+    /// yield to a newer copy at once; give an older copy a moment to leave, which
+    /// is what `restart()` looks like from here (it spawns us, then quits); and if
+    /// the older copy is still there, it is the running app and we are the extra.
+    ///
     /// ponytail: pid order stands in for launch order. It only misorders across a
     /// pid wrap, which needs two launches racing at that exact moment.
-    func applicationWillFinishLaunching(_ notification: Notification) {
+    static func claimSingleInstance() {
         guard let bundleID = Bundle.main.bundleIdentifier else { return }
         let me = ProcessInfo.processInfo.processIdentifier
-        let others = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
-            .filter { $0.processIdentifier != me }
-        if others.contains(where: { $0.processIdentifier > me }) { exit(0) }
-        others.forEach { $0.terminate() }
+        func others() -> [pid_t] {
+            NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+                .map(\.processIdentifier).filter { $0 != me }
+        }
+        if others().contains(where: { $0 > me }) { exit(0) }
+        let deadline = Date().addingTimeInterval(3)
+        while Date() < deadline, others().contains(where: { $0 < me }) { usleep(50_000) }
+        if others().contains(where: { $0 < me }) { exit(0) }
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
